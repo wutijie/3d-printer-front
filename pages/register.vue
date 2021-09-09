@@ -44,7 +44,8 @@ export default {
         if (valid) {
           const obj = {
             ...this.registerForm,
-            passwd: md5(this.registerForm.passwd)
+            passwd: md5(this.registerForm.passwd),
+            passwdnone: this.registerForm.passwd
           }
           const ret = await this.$http.post('/user/register', obj)
           this.loading = false
