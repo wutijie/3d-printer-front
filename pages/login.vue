@@ -44,8 +44,6 @@ export default {
   mounted () {
     localStorage.removeItem('token')
     Cookies.remove('token')
-    const token = localStorage.getItem('token')
-    console.log('token', token)
   },
   methods: {
     handleLogin (formName) {
