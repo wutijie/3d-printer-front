@@ -15,6 +15,14 @@ export default {
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
     ]
   },
+  router: {
+    extendRoutes (routes, resolve) {
+      routes.push({
+        path: '*',
+        redirect: '/'
+      })
+    }
+  },
 
   // Global CSS: https://go.nuxtjs.dev/config-css
   css: [
@@ -24,7 +32,9 @@ export default {
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
   plugins: [
     '@/plugins/element-ui',
-    '@/plugins/axios'
+    '@/plugins/axios',
+    '@/plugins/router'
+    // { src: '@/plugins/router', ssr: false }
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components

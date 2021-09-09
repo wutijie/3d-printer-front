@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import axios from 'axios'
-import { MessageBox } from 'element-ui'
+import { Message } from 'element-ui'
 
 const service = axios.create({
   // timeout: 5,
@@ -26,14 +26,9 @@ export default ({ store, redirect }) => {
       const { data } = response
 
       if (data.code === -666) {
-        MessageBox.confirm('登录已过期', '过期', {
-          confirmButtonText: '登录',
-          showCancelButton: false,
-          type: 'warning'
-        }).then(() => {
-          localStorage.removeItem('token')
-          redirect({ path: 'login' })
-        })
+        Message.warning('登录已过期，请重新登录')
+        localStorage.removeItem('token')
+        redirect({ path: '/login' })
       }
       return data
     }

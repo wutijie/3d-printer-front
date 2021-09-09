@@ -1,15 +1,18 @@
 <template>
-  <div>
-    <h1>用户中心</h1>
+  <div class="uploadfile-container">
+    <div class="log-out-wrap">
+      <el-button @click="handleLogOut">退出登录</el-button>
+    </div>
+    <h1>文件上传</h1>
     <div id="drag" ref="drag">
       <i class="el-icon-files" />
       <input type="file" name="file" @change="handleFilerChange">
     </div>
-    <div>
+    <!-- <div>
       <el-progress :stroke-width="20" :text-inside="true" :percentage="uploadProgress" />
-    </div>
+    </div> -->
     <div>
-      <el-button @click="uploadFile">
+      <el-button :icon="loading ? 'el-icon-loading' : ''" type="primary" :disabled="loading" @click="uploadFile">
         上传
       </el-button>
     </div>
@@ -18,13 +21,16 @@
       <div>
         <el-progress :stroke-width="20" :text-inside="true" :percentage="hashProgress" />
       </div>
+      <p>hash: {{ hash }}</p>
+      <p>下载地址: {{ fileUrl }}</p>
     </div>
     <div>
       <!-- chunk.progress -->
       <!-- chunk.progress < 0 报错 显示红色 -->
       <!-- chunk.progress == 100 报错 成功 -->
       <!-- chunk.progress 别的数组 方块的高度 -->
-      <div class="cube-container" :style="{width: cubWidth + 'px'}">
+      <!-- <div class="cube-container" :style="{width: cubWidth + 'px'}"> -->
+      <div class="cube-container">
         <div v-for="chunk in chunks" :key="chunk.name" class="cube">
           <div
             :class="{
@@ -54,7 +60,10 @@ export default {
       // uploadProgress: 0,
       // 计算hash进度
       hashProgress: 0,
-      chunks: []
+      chunks: [],
+      hash: '',
+      fileUrl: '',
+      loading: false
     }
   },
   computed: {
@@ -75,6 +84,13 @@ export default {
     this.bindEvents()
   },
   methods: {
+    handleLogOut () {
+      this.$store.dispatch('user/logout')
+      this.$router.push({
+        path: '/login',
+        replace: true
+      })
+    },
     bindEvents () {
       const drag = this.$refs.drag
       drag.addEventListener('dragover', (ev) => {
@@ -251,9 +267,13 @@ export default {
     },
     async uploadFile () {
       if (!this.file) {
-        return
+        return this.$message.warning('请选择文件')
       }
       this.hashProgress = 0
+      this.loading = true
+      this.chunks = []
+      this.hash = ''
+      this.fileUrl = ''
       /* if (!await this.isImage(this.file)) {
         console.log('文件格式不正确')
         // return
@@ -264,11 +284,11 @@ export default {
       const chunks = this.createFileChunk(this.file)
       // 文件需要一个唯一的id值
       // 使用webWorker
-      const hash = await this.calculateHashWorker(chunks)
+      // const hash = await this.calculateHashWorker(chunks)
       // console.log('文件hash', hash)
       //
       // 使用时间切片
-      // const hash1 = await this.calculateHashIdle(chunks)
+      const hash = await this.calculateHashIdle(chunks)
       // console.log('文件hash1', hash1)
       //
       // 抽样hash 不算全量
@@ -283,9 +303,14 @@ export default {
         hash: this.hash,
         ext: this.file.name.split('.').pop()
       })
-      const { uploaded, uploadedList } = uploadedData.data
+      if (!uploadedData.data) {
+        return
+      }
+      const { url, uploaded, uploadedList } = uploadedData.data
       if (uploaded) {
         // 秒传
+        this.loading = false
+        this.fileUrl = url
         return this.$message.success('秒传成功！')
       }
       this.chunks = chunks.map((chunk, index) => {
@@ -301,6 +326,7 @@ export default {
         }
       })
       await this.uploadChunks(uploadedList)
+      this.loading = false
     },
     async uploadChunks (uploadedList) {
       const requests = this.chunks
@@ -403,11 +429,36 @@ export default {
         }
       })
     },
-    mergeRequest () {
+    // 合并请求
+    async mergeRequest () {
+      // 合并之前再次查询是否已全部上传，
+      const uploadedData = await this.$http.post('/checkfile', {
+        hash: this.hash,
+        ext: this.file.name.split('.').pop()
+      })
+      const { uploadedList } = uploadedData.data
+      if (uploadedList.length !== this.chunks.length) {
+        this.chunks = this.chunks.map((chunk) => {
+          // 切片的名字 hash+index
+          return {
+            ...chunk,
+            // 设置进度条，已经上传的，设为100
+            progress: uploadedList.includes(chunk.name) ? 100 : -1
+          }
+        })
+        await this.uploadChunks(uploadedList)
+        return
+      }
+
       this.$http.post('/mergefile', {
         ext: this.file.name.split('.').pop(),
         size: CHUNK_SIZE,
         hash: this.hash
+      }).then((res) => {
+        if (res.code === 0) {
+          this.fileUrl = res.data.url
+          this.$message.success('上传成功！')
+        }
       })
     },
     handleFilerChange (ev) {
@@ -422,13 +473,22 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .uploadfile-container {
+    width: 80%;
+    margin: 0 auto;
+  }
+  .log-out-wrap {
+    text-align: right;
+  }
   #drag {
     height: 100px;
     line-height: 100px;
     border: 2px dashed #eee;
     text-align: center;
+    margin-bottom: 20px;
   }
   .cube-container {
+    margin: 20px auto;
     .cube {
       width: 50px;
       height: 50px;

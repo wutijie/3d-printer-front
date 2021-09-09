@@ -11,15 +11,19 @@ const mutations = {
     state.token = token
   },
   SET_USER (state, user) {
-    state.id = user.USER_ID
-    state.nickname = user.USER_NAME
+    state.id = user.USER_ID || ''
+    state.nickname = user.USER_NAME || ''
   }
 }
 
 const actions = {
-  detail: async ({ state, commit }, data) => {
+  async detail ({ state, commit }, data) {
     const result = await http.get('/user/detail')
     return result
+  },
+  logout ({ commit }) {
+    commit('SET_TOKEN', '')
+    commit('SET_USER', {})
   }
 }
 
