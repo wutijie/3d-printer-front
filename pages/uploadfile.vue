@@ -452,8 +452,10 @@ export default {
 
       this.$http.post('/mergefile', {
         ext: this.file.name.split('.').pop(),
-        size: CHUNK_SIZE,
-        hash: this.hash
+        chuckSize: CHUNK_SIZE,
+        hash: this.hash,
+        fileName: this.file.name,
+        fileSize: this.file.size
       }).then((res) => {
         if (res.code === 0) {
           this.fileUrl = res.data.url
