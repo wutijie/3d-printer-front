@@ -22,6 +22,7 @@
         <el-progress :stroke-width="20" :text-inside="true" :percentage="hashProgress" />
       </div>
       <p>hash: {{ hash }}</p>
+      <p>文件切割数：{{ chunks.length }}</p>
       <p>下载地址: {{ fileUrl }}</p>
     </div>
     <div>
